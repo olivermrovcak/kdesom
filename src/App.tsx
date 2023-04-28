@@ -2,10 +2,10 @@ import React, {useState} from 'react';
 
 
 import StreetViewService = google.maps.StreetViewService;
-import {Browser} from "leaflet";
-import safari = Browser.safari;
 let panorama: google.maps.StreetViewPanorama;
 let map: google.maps.Map;
+
+
 
 interface Coordinates {
     latitude: number;
@@ -21,21 +21,25 @@ function App() {
 
     const [markerPos, setMarkerPos] = useState<any>();
     const [sVCoords, setSVCoords] = useState<any>();
-
+    const [submited, setSubmited] = useState(false);
+    const [markers, setMarkers] = useState<any>([]);
+    const [lines, setLines] = useState<any>([]);
 
     function initMap(): void {
         const mapOptions: google.maps.MapOptions = {
-            center: {lat: 46.528634, lng: 2.438963},
-            zoom: 2,
+            center: {lat: 48.77559816437337, lng: 19.61552985351171},
+
+            zoom: 7,
             mapTypeControl: false, // disable the map type control
             zoomControl: false, // disable the zoom control
             streetViewControl: false, // disable the street view control
             fullscreenControl: false
         };
-         map  = new google.maps.Map(
+         map = new google.maps.Map(
             document.getElementById('map') as HTMLElement,
             mapOptions
         );
+
         const markerIcon = {
             url: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
             fillColor: "#4285F4",
@@ -54,14 +58,20 @@ function App() {
             icon: markerIcon,
         });
 
-        map.addListener("click", (event) => {
 
+
+        map.addListener("click", (event) => {
+            marker.setMap(map)
+            setMarkers([...markers, marker,markerSv])
             setMarkerPos(event.latLng)
             marker.setPosition(event.latLng);
+            console.log(event.latLng.lat(),event.latLng.lng(), )
         });
+
     }
 
     window.addEventListener('load', initMap);
+
 
     function initializeStreetView() {
         panorama = new google.maps.StreetViewPanorama(
@@ -75,14 +85,9 @@ function App() {
                 enableCloseButton: false,
                 disableDefaultUI: true,
                 showRoadLabels: false,
-
             }
         );
-
-
         getRandomView();
-
-
     }
 
 
@@ -114,6 +119,7 @@ function App() {
 
             if (status == "OK") {
                 setSVCoords(data.location.latLng)
+                console.log(data)
                 panorama.setPano(data.location.pano)
 
             }
@@ -144,8 +150,8 @@ function App() {
 
 
     function handleDone() {
-        console.log(markerPos?.lat(),markerPos?.lng()  )
-        console.log(sVCoords?.lat(),sVCoords?.lng()  )
+        console.log(markerPos?.lat(),markerPos?.lng())
+        console.log(sVCoords?.lat(),sVCoords?.lng())
 
         const stViewLat: number = sVCoords?.lat();
         const stViewLng: number = sVCoords?.lng();
@@ -153,22 +159,9 @@ function App() {
         const markerLat: number = markerPos?.lat();
         const markerLng: number = markerPos?.lng();
 
-        map.setZoom(6);
-
-
-        const markerIcon = {
-            url: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
-            fillColor: "#4285F4",
-            fillOpacity: 1,
-            strokeWeight: 0,
-            scale: 10,
-        };
-
-        const markerSv = new google.maps.Marker({
-            map: map,
-            icon: markerIcon,
-            position: {lat: stViewLat, lng: stViewLng}
-        });
+        map?.setZoom(6);
+        markers[1].setMap(map);
+        markers[1].setPosition({lat: stViewLat, lng: stViewLng});
 
         const coordinates = [
             { lat: markerLat, lng: markerLng },
@@ -176,32 +169,49 @@ function App() {
 
         ];
 
-// Create the polyline
         const polyline = new google.maps.Polyline({
             path: coordinates,
             strokeColor: "#FF0000",
             strokeOpacity: 1.0,
             strokeWeight: 2,
         });
-
-// Add the polyline to the map
+        setLines([...lines, polyline])
         polyline.setMap(map);
+        map.setCenter(calculateCenter(stViewLat,stViewLng,markerLat,markerLng));
+        setSubmited(true);
 
+    }
 
-        map.setCenter(calculateCenter(stViewLat,stViewLng,markerLat,markerLng))
+    function handleReset() {
+        removeMarkers();
+        removeLines();
+        setMarkerPos(null)
+        getRandomView();
+        setSubmited(false);
+    }
 
-        console.log(calculateDistance(stViewLat, stViewLng, markerLat, markerLng) );
+    function removeMarkers() {
+        for (let i = 0; i < markers.length; i++) {
+            markers[i].setMap(null);
+
+        }
+    }
+    function removeLines() {
+        for (let i = 0; i < lines.length; i++) {
+            lines[i].setMap(null);
+
+        }
     }
 
     return (
         <div className="App flex flex-col justify-center  items-center w-screen h-screen ">
 
 
-            <section className="w-[80%] h-[80%] relative">
+            <section className="w-full h-full relative">
 
                 <div className="w-full h-full rounded-lg  z-0 " id="street-view"></div>
                 <div
-                    className="rounded-md w-36 h-36 hover:w-[60%] hover:h-[45%] transition-all ease-in-out duration-300 bg-blue-200 bottom-10 left-10 absolute ">
+                    className="rounded-md w-[20%] h-[20%] hover:w-[60%] hover:h-[45%] transition-all ease-in-out duration-300 bg-blue-200 bottom-10 left-10 absolute ">
 
                     <div id="map" className="w-full h-full rounded-md">
 
@@ -212,6 +222,14 @@ function App() {
                             onClick={() => handleDone()}
                             className="w-28 h-8 border  rounded-md bg-blue-700 text-white absolute z-1 bottom-4  left-[50%] -translate-x-[50%] transition-all ease-in-out duration-300">
                             Done
+                        </button>
+                    )}
+
+                    {submited && (
+                        <button
+                            onClick={() => handleReset()}
+                            className="w-28 h-8 border  rounded-md bg-blue-700 text-white absolute z-1 bottom-4  left-[50%] -translate-x-[50%] transition-all ease-in-out duration-300">
+                            Reset
                         </button>
                     )}
 
