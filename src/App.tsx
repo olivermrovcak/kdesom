@@ -1,5 +1,7 @@
 import React, {useEffect, useState} from 'react';
-
+// @ts-ignore
+import arrow from "./images/arrow.png";
+import {useNavigate} from "react-router-dom";
 
 import StreetViewService = google.maps.StreetViewService;
 let panorama: google.maps.StreetViewPanorama;
@@ -19,6 +21,7 @@ interface LatLngLiteral {
 
 function App() {
 
+    const navigate = useNavigate();
     const [markerPos, setMarkerPos] = useState<any>();
     const [sVCoords, setSVCoords] = useState<any>();
     const [submited, setSubmited] = useState(false);
@@ -253,15 +256,18 @@ function App() {
         }
     }
 
+    function handleGoBack() {
+        navigate('/')
+    }
+
     return (
-        <div className="App flex flex-col justify-center  items-center w-screen h-screen ">
+        <div className="App flex flex-col justify-center  items-center w-screen h-screen relative ">
 
-            <div>
 
-            </div>
 
 
                 <section className="w-full h-full relative">
+
 
                     <div className="w-full h-full rounded-lg  z-0 " id="street-view"></div>
                     <div
@@ -287,6 +293,9 @@ function App() {
                             </button>
                         )}
 
+                    </div>
+                    <div className="absolute top-5 left-5 w-10 h-10 z-1 rotate-180 arrow cursor-pointer hover:scale-125  transition-all">
+                        <img onClick={() => handleGoBack()} src={arrow} alt="arrow-back "/>
                     </div>
 
 
