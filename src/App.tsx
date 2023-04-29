@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 
 
 import StreetViewService = google.maps.StreetViewService;
@@ -24,6 +24,13 @@ function App() {
     const [submited, setSubmited] = useState(false);
     const [markers, setMarkers] = useState<any>([]);
     const [lines, setLines] = useState<any>([]);
+
+    useEffect(() => {
+        initMap();
+        initializeStreetView();
+    }, []);
+
+
 
     function initMap(): void {
         const mapOptions: google.maps.MapOptions = {
@@ -70,7 +77,6 @@ function App() {
 
     }
 
-    window.addEventListener('load', initMap);
 
 
     function initializeStreetView() {
@@ -91,11 +97,45 @@ function App() {
     }
 
 
-    window.addEventListener('load', initializeStreetView);
+    function pointInPolygon(point: [any, any], polygon: [any, any][]): boolean {
+        let inside = false;
+        const x = point[0], y = point[1];
+
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+
+            const xi = polygon[i][0], yi = polygon[i][1];
+            const xj = polygon[j][0], yj = polygon[j][1];
+
+            const intersect = ((yi > y) !== (yj > y)) && (x < ((xj - xi) * (y - yi) / (yj - yi)) + xi);
+            console.log(intersect)
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+
+
 
 
     function getRandomView(): void {
         const service = new StreetViewService();
+
+        const arr = [
+           [ 48.42611411652761, 16.83737757631693 ],
+           [ 48.88343206217704 , 17.20406701097706 ],
+           [ 49.42430824496527, 18.939213431223518 ],
+           [ 49.22135317633194, 19.730396207596602 ],
+           [ 49.421683573627554,21.11943107057624 ],
+           [ 49.389191787782956,21.884697981604962 ],
+           [ 49.052199531094736,22.538913798919374 ],
+           [ 48.40544965144248,22.136980002078875 ],
+           [ 48.56920497495687,21.411369400319067 ],
+           [ 48.30156692973986, 20.399756749248784 ],
+           [ 48.249926756557294, 19.601090269419938 ],
+           [ 47.84701097641858, 18.79991533457215],
+           [ 47.77349403313184,  17.914522332393027],
+           [ 48.03946809804529, 17.08930468671376],
+           [ 48.62163567242417, 16.9306671213369]
+        ] as any;
 
 
         const slovakiaBounds = {
@@ -105,8 +145,18 @@ function App() {
             west: 16.8471,
         };
 
-        let plat = Math.random() * (slovakiaBounds.north - slovakiaBounds.south) + slovakiaBounds.south;
-        let plng = Math.random() * (slovakiaBounds.east - slovakiaBounds.west) + slovakiaBounds.west;
+        let plat ;
+        let plng ;
+
+        while(true) {
+            plat = Math.random() * (slovakiaBounds.north - slovakiaBounds.south) + slovakiaBounds.south;
+            plng = Math.random() * (slovakiaBounds.east - slovakiaBounds.west) + slovakiaBounds.west;
+            console.log(plat, plng)
+
+            if (pointInPolygon([plat, plng], arr)) {
+                break;
+            }
+        }
 
         const streetViewRequest = {
             location: {lat: plat, lng: plng},
@@ -206,37 +256,44 @@ function App() {
     return (
         <div className="App flex flex-col justify-center  items-center w-screen h-screen ">
 
+            <div>
 
-            <section className="w-full h-full relative">
+            </div>
 
-                <div className="w-full h-full rounded-lg  z-0 " id="street-view"></div>
-                <div
-                    className="rounded-md w-[20%] h-[20%] hover:w-[60%] hover:h-[45%] transition-all ease-in-out duration-300 bg-blue-200 bottom-10 left-10 absolute ">
 
-                    <div id="map" className="w-full h-full rounded-md">
+                <section className="w-full h-full relative">
+
+                    <div className="w-full h-full rounded-lg  z-0 " id="street-view"></div>
+                    <div
+                        className="rounded-md w-[20%] h-[20%] hover:w-[60%] hover:h-[45%] transition-all ease-in-out duration-300 bg-blue-200 bottom-10 left-10 absolute ">
+
+                        <div id="map" className="w-full h-full rounded-md">
+
+                        </div>
+
+                        {markerPos && (
+                            <button
+                                onClick={() => handleDone()}
+                                className="w-28 h-8 border  rounded-md bg-blue-700 text-white absolute z-1 bottom-4  left-[50%] -translate-x-[50%] transition-all ease-in-out duration-300">
+                                Done
+                            </button>
+                        )}
+
+                        {submited && (
+                            <button
+                                onClick={() => handleReset()}
+                                className="w-28 h-8 border  rounded-md bg-blue-700 text-white absolute z-1 bottom-4  left-[50%] -translate-x-[50%] transition-all ease-in-out duration-300">
+                                Reset
+                            </button>
+                        )}
 
                     </div>
 
-                    {markerPos && (
-                        <button
-                            onClick={() => handleDone()}
-                            className="w-28 h-8 border  rounded-md bg-blue-700 text-white absolute z-1 bottom-4  left-[50%] -translate-x-[50%] transition-all ease-in-out duration-300">
-                            Done
-                        </button>
-                    )}
 
-                    {submited && (
-                        <button
-                            onClick={() => handleReset()}
-                            className="w-28 h-8 border  rounded-md bg-blue-700 text-white absolute z-1 bottom-4  left-[50%] -translate-x-[50%] transition-all ease-in-out duration-300">
-                            Reset
-                        </button>
-                    )}
-
-                </div>
+                </section>
 
 
-            </section>
+
 
 
         </div>

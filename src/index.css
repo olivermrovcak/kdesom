@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@100&display=swap');
 
 body {
   margin: 0;
@@ -14,9 +15,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+.landing-page h1 {
+  font-family: 'Bebas Neue', cursive;
+
 }
 
+.shadow-custom {
+  box-shadow: 20px 20px 60px #75B681;
+}
 
