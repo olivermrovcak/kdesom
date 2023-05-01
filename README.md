@@ -1,3 +1,3 @@
 # kdesom
 KdeSom?
-kdesom.web.app
+https://kdesom.web.app
