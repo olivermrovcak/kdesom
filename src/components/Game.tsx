@@ -1,12 +1,13 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 // @ts-ignore
-import arrow from "./images/arrow.png";
+import arrow from "../images/arrow.png";
 import {useNavigate} from "react-router-dom";
-import PersonPinIcon from '@mui/icons-material/PersonPin';
-
 import StreetViewService = google.maps.StreetViewService;
 import AdvancedMarkerElement = google.maps.Marker;
 import PinElement = google.maps.Marker;
+import {useAppDispatch, useAppSelector} from '../hooks/hooks';
+
+import {setGameActive} from '../redux/slices/GameState'
 
 
 let panorama: google.maps.StreetViewPanorama;
@@ -25,13 +26,27 @@ interface LatLngLiteral {
 
 function Game() {
     const navigate = useNavigate();
+    const [tries, setTries] = useState(1);
+    const [points, setPoints] = useState(0);
     const [markerPos, setMarkerPos] = useState<any>();
     const [sVCoords, setSVCoords] = useState<any>();
     const [submited, setSubmited] = useState(false);
     const [markers, setMarkers] = useState<any>([]);
     const [lines, setLines] = useState<any>([]);
 
+    const submitedRef = useRef(submited); // Create a ref to track the latest value of submited
+
     useEffect(() => {
+        submitedRef.current = submited; // Update the ref whenever submited changes
+    }, [submited]);
+
+    //redux
+    const isGameActive = useAppSelector((state) => state.gameState.gameActive)
+    const dispatch = useAppDispatch()
+
+    useEffect(() => {
+        dispatch(setGameActive(true))
+
         initMap();
         initializeStreetView();
     }, []);
@@ -65,32 +80,20 @@ function Game() {
             title: "Custom SVG Marker",
         });
 
-        const markerIcon = {
-            url: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
-            fillColor: "#4285F4",
-            fillOpacity: 1,
-            strokeWeight: 0,
-            scale: 10,
-        };
-
-        const marker = new google.maps.Marker({
-            map: map,
-            icon: markerIcon,
-        });
-
         const markerSv = new google.maps.Marker({
             map: map,
-            icon: markerIcon,
         });
 
         map.addListener("click", (event) => {
+            if (submitedRef.current) {  // Access the latest value of submited using the ref
+                return
+            }
             marker2.setMap(map)
             setMarkers([...markers, marker2, markerSv])
             setMarkerPos(event.latLng)
             marker2.setPosition(event.latLng);
             console.log(event.latLng.lat(), event.latLng.lng(),)
         });
-
     }
 
     function initializeStreetView() {
@@ -210,6 +213,9 @@ function Game() {
         return {lat: centerLat, lng: centerLng};
     }
 
+    function calculatePoints(distance: number): number {
+        return 5000 - Math.round(distance * 10);
+    }
 
     function handleDone() {
         console.log(markerPos?.lat(), markerPos?.lng())
@@ -237,10 +243,19 @@ function Game() {
             strokeOpacity: 1.0,
             strokeWeight: 2,
         });
+        const distance = calculateDistance(stViewLat, stViewLng, markerLat, markerLng);
+        setPoints(points + calculatePoints(distance))
+        console.log("Distance points: ", calculatePoints(distance))
+        setTries(tries + 1)
         setLines([...lines, polyline])
         polyline.setMap(map);
         map.setCenter(calculateCenter(stViewLat, stViewLng, markerLat, markerLng));
         setSubmited(true);
+
+        if (tries === 5) {
+            handleReset();
+            navigate('/dashboard')
+        }
     }
 
     function handleReset() {
@@ -270,9 +285,18 @@ function Game() {
     return (
         <div className="App flex flex-col justify-center  items-center w-screen h-screen relative ">
             <section className="w-full h-full relative">
+                <div
+                    className="!absolute !z-[1000] top-3 left-[50%] -translate-x-[50%] w-52 p-3 bg-blue-300 rounded-lg text-center">
+                    Skóre: {points}
+                </div>
                 <div className="w-full h-full rounded-lg  z-0 " id="street-view"></div>
                 <div
                     className="rounded-md w-[20%] h-[20%] hover:w-[60%] hover:h-[45%] transition-all ease-in-out duration-300 bg-blue-200 bottom-10 left-10 absolute ">
+                    <div
+                        className="absolute !z-[1000] right-5 top-5 bg-blue-300 rounded-lg p-1 flex justify-center items-center">
+                        <p className="">{tries}</p>
+                    </div>
+
                     <div id="map" className="w-full h-full rounded-md">
                     </div>
                     {markerPos && (
