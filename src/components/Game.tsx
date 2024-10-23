@@ -1,17 +1,29 @@
 import React, {useEffect, useRef, useState} from 'react';
-// @ts-ignore
 import arrow from "../images/arrow.png";
 import {useNavigate} from "react-router-dom";
 import StreetViewService = google.maps.StreetViewService;
 import AdvancedMarkerElement = google.maps.Marker;
 import PinElement = google.maps.Marker;
 import {useAppDispatch, useAppSelector} from '../hooks/hooks';
+import {villages} from '../coordinates/villages'
+import guessLogo from '../images/guess-logo.png';
+
 
 import {setGameActive} from '../redux/slices/GameState'
+import {Button} from '@material-tailwind/react';
+import Dialog from './Dialog';
+import {calculateCenter} from '../utils/utils';
+
+import {MapIcon, XCircleIcon} from '@heroicons/react/24/solid'
 
 
 let panorama: google.maps.StreetViewPanorama;
 let map: google.maps.Map;
+
+
+interface Village {
+    village: [lat: number, lng: number];
+}
 
 
 interface Coordinates {
@@ -34,7 +46,20 @@ function Game() {
     const [markers, setMarkers] = useState<any>([]);
     const [lines, setLines] = useState<any>([]);
 
+    //dialog
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isMapOpened, setIsMapOpened] = useState(false);
+
+    const [currentVillage, setCurrentVillage] = useState<String>("");
+
+    const service = new StreetViewService();
+    const geocoder = new google.maps.Geocoder();
+
     const submitedRef = useRef(submited); // Create a ref to track the latest value of submited
+
+    function handleCloseDialog() {
+        setIsDialogOpen(false);
+    }
 
     useEffect(() => {
         submitedRef.current = submited; // Update the ref whenever submited changes
@@ -58,7 +83,19 @@ function Game() {
             mapTypeControl: false, // disable the map type control
             zoomControl: false, // disable the zoom control
             streetViewControl: false, // disable the street view control
-            fullscreenControl: false
+            fullscreenControl: false,
+            styles: [
+                {
+                    featureType: "administrative",
+                    elementType: "labels",
+                    stylers: [{visibility: "off"}]
+                },
+                {
+                    featureType: "poi",
+                    elementType: "labels",
+                    stylers: [{visibility: "off"}]
+                },
+            ]
         };
         map = new google.maps.Map(
             document.getElementById('map') as HTMLElement,
@@ -71,12 +108,12 @@ function Game() {
 
         const markerIcons = {
             url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(pinSvg),
-            scaledSize: new google.maps.Size(40, 40),  // Adjust size as needed
+            scaledSize: new google.maps.Size(40, 40),
         };
 
         const marker2 = new google.maps.Marker({
             map: map,
-            icon: markerIcons,  // Use the custom SVG icon
+            icon: markerIcons,
             title: "Custom SVG Marker",
         });
 
@@ -110,7 +147,7 @@ function Game() {
                 showRoadLabels: false,
             }
         );
-        getRandomView();
+        getView()
     }
 
     function pointInPolygon(point: [any, any], polygon: [any, any][]): boolean {
@@ -129,10 +166,11 @@ function Game() {
         return inside;
     }
 
+    function toggleMapOpen() {
+        setIsMapOpened(!isMapOpened)
+    }
 
     function getRandomView(): void {
-        const service = new StreetViewService();
-
         const arr = [
             [48.42611411652761, 16.83737757631693],
             [48.88343206217704, 17.20406701097706],
@@ -151,7 +189,6 @@ function Game() {
             [48.62163567242417, 16.9306671213369]
         ] as any;
 
-
         const slovakiaBounds = {
             north: 49.6131,
             south: 47.7314,
@@ -165,29 +202,89 @@ function Game() {
         while (true) {
             plat = Math.random() * (slovakiaBounds.north - slovakiaBounds.south) + slovakiaBounds.south;
             plng = Math.random() * (slovakiaBounds.east - slovakiaBounds.west) + slovakiaBounds.west;
-            console.log(plat, plng)
-
             if (pointInPolygon([plat, plng], arr)) {
                 break;
             }
         }
 
-        const streetViewRequest = {
-            location: {lat: plat, lng: plng},
-            source: google.maps.StreetViewSource.OUTDOOR,
-            radius: 5000
+        geocoder.geocode({address: "Slovakia"}, (results, status) => {
+            if (status === google.maps.GeocoderStatus.OK && results[0]) {
+                const location = results[0].geometry.location;
 
-        };
+                console.log(location)
 
-        service.getPanorama(streetViewRequest, (data: any, status: any) => {
+                const streetViewRequest: google.maps.StreetViewLocationRequest = {
+                    location: location,  // LatLng object from geocoding
+                    source: google.maps.StreetViewSource.OUTDOOR,
+                    radius: 5000
+                };
 
-            if (status == "OK") {
-                setSVCoords(data.location.latLng)
-                console.log(data)
-                panorama.setPano(data.location.pano)
-
+                service.getPanorama(streetViewRequest, (data: google.maps.StreetViewPanoramaData | null, status: google.maps.StreetViewStatus) => {
+                    if (status === google.maps.StreetViewStatus.OK && data) {
+                        setSVCoords(data?.location?.latLng);
+                        console.log(data);
+                        panorama.setPano(data?.location?.pano as any);
+                    } else {
+                        console.error('No Street View data available for this location.');
+                    }
+                });
+            } else {
+                console.error('Geocoding failed: ' + status);
             }
-        })
+        });
+
+        /* const streetViewRequest = {
+             location: {lat: plat, lng: plng},
+             source: google.maps.StreetViewSource.OUTDOOR,
+             radius: 5000
+         };
+
+         service.getPanorama(streetViewRequest, (data: any, status: any) => {
+             if (status == "OK") {
+                 setSVCoords(data.location.latLng)
+                 console.log(data)
+                 panorama.setPano(data.location.pano)
+             }
+         })*/
+    }
+
+    function getView() {
+        const arr: any = villages
+
+        const randomIndex = Math.floor(Math.random() * arr.length);
+        const randomVillage = arr[randomIndex];
+
+        console.log(randomVillage)
+
+        setCurrentVillage(randomVillage)
+
+        getPanoramaByDescription(randomVillage)
+    }
+
+    function getPanoramaByDescription(description: string) {
+        geocoder.geocode({address: description}, (results, status) => {
+            if (status === google.maps.GeocoderStatus.OK && results[0]) {
+                const location = results[0].geometry.location;
+
+                const streetViewRequest: google.maps.StreetViewLocationRequest = {
+                    location: location,  // LatLng object from geocoding result
+                    source: google.maps.StreetViewSource.OUTDOOR,
+                    radius: 5000
+                };
+
+                service.getPanorama(streetViewRequest, (data: google.maps.StreetViewPanoramaData | null, status: google.maps.StreetViewStatus) => {
+                    if (status === google.maps.StreetViewStatus.OK && data) {
+                        setSVCoords(data?.location?.latLng);
+                        console.log(data);
+                        panorama.setPano(data?.location?.pano as any);
+                    } else {
+                        console.error('No Street View data available for this location.');
+                    }
+                });
+            } else {
+                console.error('Geocoding failed: ' + status);
+            }
+        });
     }
 
     function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number, unit: string = "km"): number {
@@ -207,20 +304,11 @@ function Game() {
         return parseFloat(distance.toFixed(2)) / 1000;
     }
 
-    function calculateCenter(lat1: number, lng1: number, lat2: number, lng2: number): { lat: number, lng: number } {
-        const centerLat = (lat1 + lat2) / 2;
-        const centerLng = (lng1 + lng2) / 2;
-        return {lat: centerLat, lng: centerLng};
-    }
-
     function calculatePoints(distance: number): number {
         return 5000 - Math.round(distance * 10);
     }
 
     function handleDone() {
-        console.log(markerPos?.lat(), markerPos?.lng())
-        console.log(sVCoords?.lat(), sVCoords?.lng())
-
         const stViewLat: number = sVCoords?.lat();
         const stViewLng: number = sVCoords?.lng();
 
@@ -253,17 +341,21 @@ function Game() {
         setSubmited(true);
 
         if (tries === 5) {
-            handleReset();
-            navigate('/dashboard')
+            console.log("Game over")
         }
+
+        setIsDialogOpen(true)
+        setIsMapOpened(false)
     }
 
     function handleReset() {
         removeMarkers();
         removeLines();
         setMarkerPos(null)
-        getRandomView();
+        getView()
         setSubmited(false);
+        setIsDialogOpen(false)
+        setIsMapOpened(false)
     }
 
     function removeMarkers() {
@@ -283,43 +375,75 @@ function Game() {
     }
 
     return (
-        <div className="App flex flex-col justify-center  items-center w-screen h-screen relative ">
-            <section className="w-full h-full relative">
-                <div
-                    className="!absolute !z-[1000] top-3 left-[50%] -translate-x-[50%] w-52 p-3 bg-blue-300 rounded-lg text-center">
-                    Skóre: {points}
-                </div>
-                <div className="w-full h-full rounded-lg  z-0 " id="street-view"></div>
-                <div
-                    className="rounded-md w-[20%] h-[20%] hover:w-[60%] hover:h-[45%] transition-all ease-in-out duration-300 bg-blue-200 bottom-10 left-10 absolute ">
-                    <div
-                        className="absolute !z-[1000] right-5 top-5 bg-blue-300 rounded-lg p-1 flex justify-center items-center">
-                        <p className="">{tries}</p>
-                    </div>
+        <div className="App flex flex-col justify-center  items-center w-screen h-screen relative overflow-hidden ">
+            <section className="w-screen h-screen relative overflow-hidden">
 
-                    <div id="map" className="w-full h-full rounded-md">
+               <div className="logo absolute left-[50%] top-5 -translate-x-[50%] sm:-translate-x-[0%] sm:left-5  lg:top-5 lg:left-5 w-[30%] sm:w-[15%] !z-[1000]">
+                    <img src={guessLogo} alt="logo"/>
+                </div>
+                <div
+                    className="!absolute !z-[1000] top-14 sm:top-5  left-[50%] -translate-x-[50%] w-32 sm:w-52 p-3 bg-blue-500 rounded-lg text-center flex flex-col">
+                    <p className="font-bold text-xl italic">{points}</p>
+                    <p className="text-sm">{currentVillage}</p>
+                </div>
+
+                <div className={`slider sm:hidden absolute left-0  w-screen 
+                h-[50%] bg-blue-500 !z-[1000] rounded-t-[30px] transition-all ease-in-out duration-300
+                ${isMapOpened ? "bottom-[50%] translate-y-[100%]" : "bottom-0 translate-y-[100%] "}`}>
+                    <div className="absolute right-5 top-5 !z-[1000]">
+                        <XCircleIcon className="w-10 h-10 text-white m-2 bg-blue-500 rounded-full" onClick={() => setIsMapOpened(false)}/>
                     </div>
-                    {markerPos && (
-                        <button
+                    <div id="map" className="w-full h-full rounded-t-[30px]">
+                    </div>
+                    <div className="absolute bottom-0 w-full p-5 ">
+                        <Button
+                            className="text-bold text-md text-white"
                             onClick={() => handleDone()}
-                            className="w-28 h-8 border  rounded-md bg-blue-700 text-white absolute z-1 bottom-4  left-[50%] -translate-x-[50%] transition-all ease-in-out duration-300">
-                            Done
-                        </button>
-                    )}
+                            fullWidth
+                            color="blue"
+                        >
+                            Guess
+                        </Button>
+                    </div>
+                </div>
 
+                <div className="w-screen h-screen z-0 " id="street-view"></div>
+
+                <div id="map" className="hidden lg:block lg:absolute  left-5 bottom-20 w-[20%]
+                h-[10%] md:h-[20%] rounded-lg  md:hover:w-[35%] hover:w-[70%]
+                hover:h-[30%] transition-all ease-in-out duration-300">
+                </div>
+
+                <div onClick={toggleMapOpen} className="absolute lg:hidden left-10 bottom-10 w-24 h-24 sm:w-36 sm:h-36 rounded-full cursor-pointer  select-none  p-1 bg-gray-200 bg-opacity-50    flex items-center justify-center">
+                    <div className="w-full h-full rounded-full bg-blue-300 flex items-center justify-center ">
+                        <MapIcon className="w-24 h-24 text-white m-6"/>
+                    </div>
+                </div>
+                <div className="absolute left-5 bottom-5 w-[20%]">
+                    {(markerPos && !submited) && (
+                        <Button
+                            className="text-bold text-md text-white"
+                            onClick={() => handleDone()}
+                            fullWidth
+                            color="blue"
+                        >
+                            Guess
+                        </Button>
+                    )}
                     {submited && (
-                        <button
+                        <Button
                             onClick={() => handleReset()}
-                            className="w-28 h-8 border  rounded-md bg-blue-700 text-white absolute z-1 bottom-4  left-[50%] -translate-x-[50%] transition-all ease-in-out duration-300">
-                            Reset
-                        </button>
+                            fullWidth
+                            color="blue"
+                        >
+                            Next
+                        </Button>
                     )}
                 </div>
-                <div
-                    className="absolute top-5 left-5 w-10 h-10 z-1 rotate-180 arrow cursor-pointer hover:scale-125  transition-all">
-                    <img onClick={() => handleGoBack()} src={arrow} alt="arrow-back "/>
-                </div>
+
             </section>
+            <Dialog showDialog={isDialogOpen} closeDialog={handleCloseDialog} posPlayer={markerPos} posResult={sVCoords}
+                    handleReset={handleReset}/>
         </div>
     );
 }

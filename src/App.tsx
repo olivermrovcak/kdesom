@@ -5,7 +5,6 @@ import {useAppDispatch, useAppSelector } from './hooks/hooks'
 import { Button } from "@material-tailwind/react";
 import { useNavigate } from 'react-router-dom';
 
-
 function App() {
     const isGameActive = useAppSelector((state) => state.gameState.gameActive)
     const dispatch = useAppDispatch()
@@ -43,7 +42,7 @@ function App() {
                     </section>
 
                     <div className="flex flex-row justify-center items-center">
-                            <Button color="blue" onClick={startGame}>Play</Button>
+                            
                     </div>
                 </section>
             </main>

@@ -17,7 +17,7 @@ root.render(
         <Provider store={store}>
             <HashRouter>
                 <Routes>
-                    <Route path="/" element={<Menu/>}/>
+                    <Route path="/" element={<Game/>}/>
                     <Route path="/dashboard" element={<App/>}/>
                     <Route path="/game" element={<Game/>}/>
                 </Routes>
