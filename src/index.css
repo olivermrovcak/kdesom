@@ -1,7 +1,6 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@100&display=swap');
 
 html, body {
   height: 100%;
@@ -16,9 +15,13 @@ html, body {
   justify-content: center;
 }
 
-.landing-page h1 {
-  font-family: 'Bebas Neue', cursive;
-
+.Dialog-container {
+    margin: 0 !important;
+    overflow: hidden !important;
+    height: 100dvh !important; /* Adjusts to the dynamic viewport height */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
 }
 
 .shadow-custom {
@@ -46,5 +49,12 @@ html, body {
 
 .dash-bg {
 
+}
+
+.login-bg {
+    background: url("./images/bg_geo.webp");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
 }
 

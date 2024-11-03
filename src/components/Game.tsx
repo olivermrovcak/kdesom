@@ -1,40 +1,27 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import arrow from "../images/arrow.png";
 import {useNavigate} from "react-router-dom";
 import StreetViewService = google.maps.StreetViewService;
 import AdvancedMarkerElement = google.maps.Marker;
 import PinElement = google.maps.Marker;
 import {useAppDispatch, useAppSelector} from '../hooks/hooks';
-import {villages} from '../coordinates/villages'
 import guessLogo from '../images/guess-logo.png';
+import compasss from '../images/compass.png';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 
 
 import {setGameActive} from '../redux/slices/GameState'
 import {Button} from '@material-tailwind/react';
 import Dialog from './Dialog';
-import {calculateCenter} from '../utils/utils';
-
 import {MapIcon, XCircleIcon} from '@heroicons/react/24/solid'
+import {GamemodeEnum} from '../utils/GamemodeEnum';
 
-
+import {PanoramaService} from '../coordinates/Geolocation';
+import GameResultDialog from './GameResultDialog';
+import MenuList from './MenuList';
 let panorama: google.maps.StreetViewPanorama;
 let map: google.maps.Map;
 
-
-interface Village {
-    village: [lat: number, lng: number];
-}
-
-
-interface Coordinates {
-    latitude: number;
-    longitude: number;
-}
-
-interface LatLngLiteral {
-    lat: number;
-    lng: number;
-}
 
 function Game() {
     const navigate = useNavigate();
@@ -45,41 +32,67 @@ function Game() {
     const [submited, setSubmited] = useState(false);
     const [markers, setMarkers] = useState<any>([]);
     const [lines, setLines] = useState<any>([]);
+    const [roundPoints, setRoundPoints] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
 
-    //dialog
+    //UI
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isMapOpened, setIsMapOpened] = useState(false);
+    const [isGameResultDialogOpen, setIsGameResultDialogOpen] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-    const [currentVillage, setCurrentVillage] = useState<String>("");
+    const [currentLocationDesc, setCurrentLocationDesc] = useState<String>("");
 
-    const service = new StreetViewService();
+    // Initialize geocoder and street view service
+    const service = new google.maps.StreetViewService();
     const geocoder = new google.maps.Geocoder();
 
-    const submitedRef = useRef(submited); // Create a ref to track the latest value of submited
+    // Initialize PanoramaService
+    const panoramaService = new PanoramaService(geocoder, service);
 
-    function handleCloseDialog() {
-        setIsDialogOpen(false);
-    }
+    const submitedRef = useRef(submited);
 
-    useEffect(() => {
-        submitedRef.current = submited; // Update the ref whenever submited changes
-    }, [submited]);
+    //gamemode
+    const [gameMode, setGameMode] = useState<GamemodeEnum>(GamemodeEnum.SVK_EASY);
 
     //redux
     const isGameActive = useAppSelector((state) => state.gameState.gameActive)
     const dispatch = useAppDispatch()
 
+    function handleCloseDialog() {
+        setIsDialogOpen(false);
+    }
+
+    function handleCloseGameResultDialog() {
+        setIsGameResultDialogOpen(false)
+    }
+
+    useEffect(() => {
+        submitedRef.current = submited;
+    }, [submited]);
+
     useEffect(() => {
         dispatch(setGameActive(true))
-
         initMap();
         initializeStreetView();
-    }, []);
+    }, [gameMode]);
+
+    function initGame() {
+        setGameMode(GamemodeEnum.SVK_EASY)
+    }
+
+    function getStartingZoom() {
+        if (gameMode === GamemodeEnum.SVK_EASY || gameMode === GamemodeEnum.SVK_HARD) {
+            return 7;
+        } else {
+            return 1.5;
+        }
+    }
 
     function initMap(): void {
         const mapOptions: google.maps.MapOptions = {
             center: {lat: 48.77559816437337, lng: 19.61552985351171},
-            zoom: 7,
+            zoom: getStartingZoom(),
             mapTypeControl: false, // disable the map type control
             zoomControl: false, // disable the zoom control
             streetViewControl: false, // disable the street view control
@@ -97,14 +110,13 @@ function Game() {
                 },
             ]
         };
-        map = new google.maps.Map(
-            document.getElementById('map') as HTMLElement,
-            mapOptions
-        );
+
+        map = new google.maps.Map(document?.getElementById('map') as HTMLElement, mapOptions);
+
         const pinSvg = `
-          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#4285F4">
-            <path d="M480-600q-58 0-99-41t-41-99q0-58 41-99t99-41q58 0 99 41t41 99q0 58-41 99t-99 41Zm0-80q25 0 42.5-17.5T540-740q0-25-17.5-42.5T480-800q-25 0-42.5 17.5T420-740q0 25 17.5 42.5T480-680Zm0 600L240-320q-20-20-30-45t-10-55q0-59 40.5-99.5T340-560q29 0 53.5 11t44.5 31l42 42 42-42q20-20 44.5-31t53.5-11q59 0 99.5 40.5T760-420q0 30-10 55t-30 45L480-80Zm0-114 182-182q9-9 13.5-20.5T680-420q0-24-17-42t-43-18q-12 0-21.5 3.5T580-464L480-364 380-464q-6-6-15.5-11t-24.5-5q-26 0-43 18t-17 42q0 12 5 22.5t13 19.5l182 184Zm0-546Zm0 403Z"/>
-          </svg>`;
+              <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#4285F4">
+                <path d="M480-600q-58 0-99-41t-41-99q0-58 41-99t99-41q58 0 99 41t41 99q0 58-41 99t-99 41Zm0-80q25 0 42.5-17.5T540-740q0-25-17.5-42.5T480-800q-25 0-42.5 17.5T420-740q0 25 17.5 42.5T480-680Zm0 600L240-320q-20-20-30-45t-10-55q0-59 40.5-99.5T340-560q29 0 53.5 11t44.5 31l42 42 42-42q20-20 44.5-31t53.5-11q59 0 99.5 40.5T760-420q0 30-10 55t-30 45L480-80Zm0-114 182-182q9-9 13.5-20.5T680-420q0-24-17-42t-43-18q-12 0-21.5 3.5T580-464L480-364 380-464q-6-6-15.5-11t-24.5-5q-26 0-43 18t-17 42q0 12 5 22.5t13 19.5l182 184Zm0-546Zm0 403Z"/>
+              </svg>`;
 
         const markerIcons = {
             url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(pinSvg),
@@ -122,16 +134,13 @@ function Game() {
         });
 
         map.addListener("click", (event) => {
-            if (submitedRef.current) {  // Access the latest value of submited using the ref
-                return
-            }
             marker2.setMap(map)
             setMarkers([...markers, marker2, markerSv])
             setMarkerPos(event.latLng)
             marker2.setPosition(event.latLng);
-            console.log(event.latLng.lat(), event.latLng.lng(),)
         });
     }
+
 
     function initializeStreetView() {
         panorama = new google.maps.StreetViewPanorama(
@@ -140,151 +149,54 @@ function Game() {
                 pov: {heading: 165, pitch: 0},
                 zoom: 1,
                 addressControl: false,
-                linksControl: true,
-                panControl: true,
+                linksControl: false, //movement
+                panControl: false,
                 enableCloseButton: false,
                 disableDefaultUI: true,
                 showRoadLabels: false,
+                clickToGo: true            // Disables clicking to navigate to other locations
             }
         );
+
         getView()
-    }
-
-    function pointInPolygon(point: [any, any], polygon: [any, any][]): boolean {
-        let inside = false;
-        const x = point[0], y = point[1];
-
-        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-
-            const xi = polygon[i][0], yi = polygon[i][1];
-            const xj = polygon[j][0], yj = polygon[j][1];
-
-            const intersect = ((yi > y) !== (yj > y)) && (x < ((xj - xi) * (y - yi) / (yj - yi)) + xi);
-            console.log(intersect)
-            if (intersect) inside = !inside;
-        }
-        return inside;
     }
 
     function toggleMapOpen() {
         setIsMapOpened(!isMapOpened)
     }
 
-    function getRandomView(): void {
-        const arr = [
-            [48.42611411652761, 16.83737757631693],
-            [48.88343206217704, 17.20406701097706],
-            [49.42430824496527, 18.939213431223518],
-            [49.22135317633194, 19.730396207596602],
-            [49.421683573627554, 21.11943107057624],
-            [49.389191787782956, 21.884697981604962],
-            [49.052199531094736, 22.538913798919374],
-            [48.40544965144248, 22.136980002078875],
-            [48.56920497495687, 21.411369400319067],
-            [48.30156692973986, 20.399756749248784],
-            [48.249926756557294, 19.601090269419938],
-            [47.84701097641858, 18.79991533457215],
-            [47.77349403313184, 17.914522332393027],
-            [48.03946809804529, 17.08930468671376],
-            [48.62163567242417, 16.9306671213369]
-        ] as any;
+    async function getView() {
+        try {
+            setIsLoading(true)
+            let pano: string | null = null;
 
-        const slovakiaBounds = {
-            north: 49.6131,
-            south: 47.7314,
-            east: 22.5503,
-            west: 16.8471,
-        };
+            console.log("Game mode: ", gameMode)
 
-        let plat;
-        let plng;
-
-        while (true) {
-            plat = Math.random() * (slovakiaBounds.north - slovakiaBounds.south) + slovakiaBounds.south;
-            plng = Math.random() * (slovakiaBounds.east - slovakiaBounds.west) + slovakiaBounds.west;
-            if (pointInPolygon([plat, plng], arr)) {
-                break;
+            if (gameMode === GamemodeEnum.SVK_EASY) {
+                pano = await panoramaService.getSvkVillagePanorama((data: any, village: string) => {
+                    console.log("Data: ", data)
+                    setSVCoords(data?.location?.latLng);
+                    console.log("Village: ", village)
+                    setCurrentLocationDesc(village);
+                });
+            } else {
+                pano = await panoramaService.getCountryPanorama((data: any, country: string) => {
+                    console.log("Data: ", data)
+                    setSVCoords(data?.location?.latLng);
+                    setCurrentLocationDesc(country);
+                });
             }
+
+            if (typeof pano === 'string') {
+                console.log("pano:", pano);
+                panorama.setPano(pano);
+                setIsLoading(false)
+            } else {
+                console.error("Failed to retrieve a valid panorama ID.");
+            }
+        } catch (error) {
+            console.error("Error loading panorama:", error);
         }
-
-        geocoder.geocode({address: "Slovakia"}, (results, status) => {
-            if (status === google.maps.GeocoderStatus.OK && results[0]) {
-                const location = results[0].geometry.location;
-
-                console.log(location)
-
-                const streetViewRequest: google.maps.StreetViewLocationRequest = {
-                    location: location,  // LatLng object from geocoding
-                    source: google.maps.StreetViewSource.OUTDOOR,
-                    radius: 5000
-                };
-
-                service.getPanorama(streetViewRequest, (data: google.maps.StreetViewPanoramaData | null, status: google.maps.StreetViewStatus) => {
-                    if (status === google.maps.StreetViewStatus.OK && data) {
-                        setSVCoords(data?.location?.latLng);
-                        console.log(data);
-                        panorama.setPano(data?.location?.pano as any);
-                    } else {
-                        console.error('No Street View data available for this location.');
-                    }
-                });
-            } else {
-                console.error('Geocoding failed: ' + status);
-            }
-        });
-
-        /* const streetViewRequest = {
-             location: {lat: plat, lng: plng},
-             source: google.maps.StreetViewSource.OUTDOOR,
-             radius: 5000
-         };
-
-         service.getPanorama(streetViewRequest, (data: any, status: any) => {
-             if (status == "OK") {
-                 setSVCoords(data.location.latLng)
-                 console.log(data)
-                 panorama.setPano(data.location.pano)
-             }
-         })*/
-    }
-
-    function getView() {
-        const arr: any = villages
-
-        const randomIndex = Math.floor(Math.random() * arr.length);
-        const randomVillage = arr[randomIndex];
-
-        console.log(randomVillage)
-
-        setCurrentVillage(randomVillage)
-
-        getPanoramaByDescription(randomVillage)
-    }
-
-    function getPanoramaByDescription(description: string) {
-        geocoder.geocode({address: description}, (results, status) => {
-            if (status === google.maps.GeocoderStatus.OK && results[0]) {
-                const location = results[0].geometry.location;
-
-                const streetViewRequest: google.maps.StreetViewLocationRequest = {
-                    location: location,  // LatLng object from geocoding result
-                    source: google.maps.StreetViewSource.OUTDOOR,
-                    radius: 5000
-                };
-
-                service.getPanorama(streetViewRequest, (data: google.maps.StreetViewPanoramaData | null, status: google.maps.StreetViewStatus) => {
-                    if (status === google.maps.StreetViewStatus.OK && data) {
-                        setSVCoords(data?.location?.latLng);
-                        console.log(data);
-                        panorama.setPano(data?.location?.pano as any);
-                    } else {
-                        console.error('No Street View data available for this location.');
-                    }
-                });
-            } else {
-                console.error('Geocoding failed: ' + status);
-            }
-        });
     }
 
     function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number, unit: string = "km"): number {
@@ -305,7 +217,8 @@ function Game() {
     }
 
     function calculatePoints(distance: number): number {
-        return 5000 - Math.round(distance * 10);
+        const points = 5000 - Math.round(distance * 10);
+        return points > 0 ? points : 0;
     }
 
     function handleDone() {
@@ -315,46 +228,32 @@ function Game() {
         const markerLat: number = markerPos?.lat();
         const markerLng: number = markerPos?.lng();
 
-        map?.setZoom(6);
-        markers[1].setMap(map);
-        markers[1].setPosition({lat: stViewLat, lng: stViewLng});
-
-        const coordinates = [
-            {lat: markerLat, lng: markerLng},
-            {lat: stViewLat, lng: stViewLng},
-
-        ];
-
-        const polyline = new google.maps.Polyline({
-            path: coordinates,
-            strokeColor: "#FF0000",
-            strokeOpacity: 1.0,
-            strokeWeight: 2,
-        });
         const distance = calculateDistance(stViewLat, stViewLng, markerLat, markerLng);
-        setPoints(points + calculatePoints(distance))
+        const actualPoints = calculatePoints(distance);
+        setPoints(points + actualPoints)
         console.log("Distance points: ", calculatePoints(distance))
-        setTries(tries + 1)
-        setLines([...lines, polyline])
-        polyline.setMap(map);
-        map.setCenter(calculateCenter(stViewLat, stViewLng, markerLat, markerLng));
         setSubmited(true);
 
-        if (tries === 5) {
-            console.log("Game over")
-        }
-
+        setRoundPoints(actualPoints)
         setIsDialogOpen(true)
         setIsMapOpened(false)
     }
 
     function handleReset() {
+       /* if (tries === 3) {
+            console.log("Game over")
+            setIsGameResultDialogOpen(true)
+            setIsDialogOpen(false)
+            return
+        }*/
+        setIsDialogOpen(false)
+        setTries(tries + 1)
+        setRoundPoints(0);
         removeMarkers();
         removeLines();
         setMarkerPos(null)
         getView()
         setSubmited(false);
-        setIsDialogOpen(false)
         setIsMapOpened(false)
     }
 
@@ -374,76 +273,80 @@ function Game() {
         navigate('/')
     }
 
-    return (
-        <div className="App flex flex-col justify-center  items-center w-screen h-screen relative overflow-hidden ">
-            <section className="w-screen h-screen relative overflow-hidden">
+    function handleChangeGameMode(dGameMode: GamemodeEnum) {
+        setGameMode(dGameMode);
+    }
 
-               <div className="logo absolute left-[50%] top-5 -translate-x-[50%] sm:-translate-x-[0%] sm:left-5  lg:top-5 lg:left-5 w-[30%] sm:w-[15%] !z-[1000]">
+    return (
+        <div className="App flex flex-col justify-center  items-center w-screen h-screen relative overflow-hidden bg-black">
+            <section className="w-screen h-screen relative overflow-hidden">
+                {isLoading && (
+                    <div className="w-screen h-screen bg-blue-700 flex justify-center items-center bg-opacity-30 transition-all">
+                        <div className="w-32">
+                            <img className="animate-spin " src={compasss}/>
+                        </div>
+                    </div>
+                )}
+
+                <div
+                    className="logo absolute left-[50%] top-5 -translate-x-[50%] sm:-translate-x-[0%] sm:left-5  lg:top-5 lg:left-5 w-[30%] sm:w-[15%] !z-[1000]">
                     <img src={guessLogo} alt="logo"/>
                 </div>
                 <div
-                    className="!absolute !z-[1000] top-14 sm:top-5  left-[50%] -translate-x-[50%] w-32 sm:w-52 p-3 bg-blue-500 rounded-lg text-center flex flex-col">
-                    <p className="font-bold text-xl italic">{points}</p>
-                    <p className="text-sm">{currentVillage}</p>
+                    className={`!z-[1000] absolute right-5 top-16 sm:top-5 bg-blue-700 bg-opacity-30 
+                rounded-lg p-1  transition-all duration-300 ease-in-out overflow-hidden flex flex-col justify-center items-center
+                ${isMenuOpen ? "w-64 h-52" : "w-14 h-14"}`}>
+                    <div className="bg-blue-500 rounded-md w-full h-full p-1">
+                        <div className={`${isMenuOpen ? "w-full h-fit justify-end" : "w-full h-full justify-center"} flex items-center `}>
+                            <SportsEsportsIcon onClick={()=> setIsMenuOpen(!isMenuOpen)} className="text-white "  />
+                        </div>
+                        <MenuList changeGamemode={handleChangeGameMode}/>
+                    </div>
                 </div>
-
-                <div className={`slider sm:hidden absolute left-0  w-screen 
-                h-[50%] bg-blue-500 !z-[1000] rounded-t-[30px] transition-all ease-in-out duration-300
-                ${isMapOpened ? "bottom-[50%] translate-y-[100%]" : "bottom-0 translate-y-[100%] "}`}>
-                    <div className="absolute right-5 top-5 !z-[1000]">
-                        <XCircleIcon className="w-10 h-10 text-white m-2 bg-blue-500 rounded-full" onClick={() => setIsMapOpened(false)}/>
-                    </div>
-                    <div id="map" className="w-full h-full rounded-t-[30px]">
-                    </div>
-                    <div className="absolute bottom-0 w-full p-5 ">
-                        <Button
-                            className="text-bold text-md text-white"
-                            onClick={() => handleDone()}
-                            fullWidth
-                            color="blue"
-                        >
-                            Guess
-                        </Button>
+                <div
+                    className="!absolute !z-[1000] top-14 sm:top-5  left-[50%] -translate-x-[50%] w-32 sm:w-52 p-1 bg-blue-700   bg-opacity-50   rounded-lg ">
+                    <div className="bg-blue-500 p-2 rounded-md flex flex-col text-center">
+                        <p className="font-bold text-xl italic text-white">{points}</p>
+                        <p className="text-sm">{gameMode === GamemodeEnum.SVK_EASY && currentLocationDesc}</p>
                     </div>
                 </div>
 
                 <div className="w-screen h-screen z-0 " id="street-view"></div>
 
-                <div id="map" className="hidden lg:block lg:absolute  left-5 bottom-20 w-[20%]
-                h-[10%] md:h-[20%] rounded-lg  md:hover:w-[35%] hover:w-[70%]
-                hover:h-[30%] transition-all ease-in-out duration-300">
-                </div>
-
-                <div onClick={toggleMapOpen} className="absolute lg:hidden left-10 bottom-10 w-24 h-24 sm:w-36 sm:h-36 rounded-full cursor-pointer  select-none  p-1 bg-gray-200 bg-opacity-50    flex items-center justify-center">
-                    <div className="w-full h-full rounded-full bg-blue-300 flex items-center justify-center ">
-                        <MapIcon className="w-24 h-24 text-white m-6"/>
+                <div className={`w-full h-[50%] md:w-[20%] md:h-[20%] bg-blue-300 bottom-0 rounded-t-[30px] md:rounded-md absolute 
+                                 transition-all ease-in-out duration-300 
+                                 md:hover:w-[35%] md:hover:h-[30%]
+                                         ${isMapOpened ? "bottom-[50%] translate-y-[100%] md:bottom-20 md:left-5 md:translate-y-0" : "bottom-0 translate-y-[100%] md:bottom-20 md:left-5 md:translate-y-0 "}`}>
+                    <div id="map" className="w-full h-full rounded-t-[30px] md:rounded-md "></div>
+                    <div className="absolute right-5 top-5 !z-[1000] md:hidden">
+                        <XCircleIcon className="w-10 h-10 text-white m-2 bg-blue-500 rounded-full"
+                                     onClick={() => setIsMapOpened(false)}/>
                     </div>
                 </div>
-                <div className="absolute left-5 bottom-5 w-[20%]">
-                    {(markerPos && !submited) && (
-                        <Button
-                            className="text-bold text-md text-white"
-                            onClick={() => handleDone()}
-                            fullWidth
-                            color="blue"
-                        >
-                            Guess
-                        </Button>
-                    )}
-                    {submited && (
-                        <Button
-                            onClick={() => handleReset()}
-                            fullWidth
-                            color="blue"
-                        >
-                            Next
-                        </Button>
-                    )}
+                <div onClick={toggleMapOpen}
+                     className={`absolute  md:hidden left-10  w-24 h-24 sm:w-36 sm:h-36 rounded-full
+                             cursor-pointer  select-none transition-all ease-in-out duration-300 p-1 bg-gray-200 bg-opacity-50 flex items-center justify-center
+                              ${isMapOpened ? "-bottom-52 !bg-red-300 " : " bottom-10"}`}>
+                    <div className="w-full h-full rounded-full bg-blue-300 flex items-center justify-center ">
+                        <MapIcon className="w-24 h-24 text-white m-6 "/>
+                    </div>
                 </div>
-
+                <div className={`absolute bottom-5  md:left-5 w-full md:w-[20%] p-5 md:p-0 transition-all fade-in ease-in-out duration-500
+                            ${isMapOpened ? "block md:block" : " hidden md:block"}`}>
+                    <Button
+                        className="text-bold text-md text-white w-full"
+                        onClick={() => handleDone()}
+                        disabled={!markerPos}
+                        fullWidth
+                        color="blue"
+                    >
+                        Guess
+                    </Button>
+                </div>
             </section>
             <Dialog showDialog={isDialogOpen} closeDialog={handleCloseDialog} posPlayer={markerPos} posResult={sVCoords}
-                    handleReset={handleReset}/>
+                    handleReset={handleReset} score={roundPoints} tries={tries} gameMode={gameMode}/>
+            <GameResultDialog showDialog={isGameResultDialogOpen} closeDialog={handleCloseGameResultDialog}/>
         </div>
     );
 }
