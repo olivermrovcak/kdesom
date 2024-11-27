@@ -16,10 +16,9 @@ function getRandomCoords() {
     let lat = Math.random() * (slovakiaBounds.north - slovakiaBounds.south) + slovakiaBounds.south;
     let lng = Math.random() * (slovakiaBounds.east - slovakiaBounds.west) + slovakiaBounds.west;
 
-
-
     return {lat, lng}
 }
+
 function checkIfAvailable(service: any, coords: LatLngLiteral, json: any) {
 
 
@@ -28,16 +27,14 @@ function checkIfAvailable(service: any, coords: LatLngLiteral, json: any) {
         radius: 1.1, // Set a radius of 50 meters to check for Street View panorama
     };
 
-    service.getPanoramaByLocation(streetViewRequest,1000, (data: any, status: any) => {
+    service.getPanoramaByLocation(streetViewRequest, 1000, (data: any, status: any) => {
 
-        if (status == "OK"){
+        if (status == "OK") {
             console.log(status + " " + "{lat:" + coords.lat + ", lng:" + coords.lng + "}")
             json.data.push(coords)
             return true;
         }
         return false;
-
-
     })
 
     return false;
@@ -45,23 +42,19 @@ function checkIfAvailable(service: any, coords: LatLngLiteral, json: any) {
 
 async function getJson() {
 
-    const myJson = { data: [] }; // create a new JSON object
+    const myJson = {data: []}; // create a new JSON object
 
     var count = 0;
     const service = new StreetViewService();
 
 
     for (let i = 0; i < 500; i++) {
-
-
         var x = getRandomCoords()
 
-        if ( checkIfAvailable(service, x, myJson))  {
+        if (checkIfAvailable(service, x, myJson)) {
             count++;
         }
-
     }
-
 }
 
 getJson();

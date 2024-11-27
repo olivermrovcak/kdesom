@@ -5,7 +5,7 @@ import {useNavigate} from "react-router-dom";
 export default function Menu() {
     const navigate = useNavigate();
     function handleStart() {
-        navigate('/game')
+        navigate('/dashboard')
     }
 
     return (

@@ -1,23 +1,27 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@100&display=swap');
 
-body {
+html, body {
+  height: 100%;
   margin: 0;
-  padding: 0;
-  width: 100vw;
-  height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
 }
 
-.landing-page h1 {
-  font-family: 'Bebas Neue', cursive;
+.App {
+  height: 100dvh; /* Adjusts to the dynamic viewport height */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 
+.Dialog-container {
+    margin: 0 !important;
+    overflow: hidden !important;
+    height: 100dvh !important; /* Adjusts to the dynamic viewport height */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
 }
 
 .shadow-custom {
@@ -26,5 +30,31 @@ body {
 
 .arrow {
   filter: invert(1);
+}
+
+.card-glass {
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  background-color: rgba(17, 25, 40, 0.75);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.125);
+}
+
+.main {
+    background: url("./images/GradientGrainy.png");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+.dash-bg {
+
+}
+
+.login-bg {
+    background: url("./images/bg_geo.webp");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
 }
 
