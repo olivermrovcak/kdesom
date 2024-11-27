@@ -1,14 +1,11 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import arrow from "../images/arrow.png";
 import {useNavigate} from "react-router-dom";
-import StreetViewService = google.maps.StreetViewService;
-import AdvancedMarkerElement = google.maps.Marker;
-import PinElement = google.maps.Marker;
 import {useAppDispatch, useAppSelector} from '../hooks/hooks';
 import guessLogo from '../images/guess-logo.png';
 import compasss from '../images/compass.png';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
-
+import { Loader } from "@googlemaps/js-api-loader"
 
 import {setGameActive} from '../redux/slices/GameState'
 import {Button} from '@material-tailwind/react';
@@ -19,45 +16,47 @@ import {GamemodeEnum} from '../utils/GamemodeEnum';
 import {PanoramaService} from '../coordinates/Geolocation';
 import GameResultDialog from './GameResultDialog';
 import MenuList from './MenuList';
+import signUp from '../api/auth';
 let panorama: google.maps.StreetViewPanorama;
 let map: google.maps.Map;
+let service: google.maps.StreetViewService;
+let geocoder:google.maps.Geocoder;
+let panoramaService: PanoramaService ;
 
 
 function Game() {
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
+
+    // State variables
     const [tries, setTries] = useState(1);
     const [points, setPoints] = useState(0);
-    const [markerPos, setMarkerPos] = useState<any>();
-    const [sVCoords, setSVCoords] = useState<any>();
+    const [markerPos, setMarkerPos] = useState(null);
+    const [sVCoords, setSVCoords] = useState(null);
     const [submited, setSubmited] = useState(false);
-    const [markers, setMarkers] = useState<any>([]);
-    const [lines, setLines] = useState<any>([]);
+    const [markers, setMarkers] = useState([]);
+    const [lines, setLines] = useState([]);
     const [roundPoints, setRoundPoints] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
 
-    //UI
+    // UI State
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isMapOpened, setIsMapOpened] = useState(false);
     const [isGameResultDialogOpen, setIsGameResultDialogOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-    const [currentLocationDesc, setCurrentLocationDesc] = useState<String>("");
-
-    // Initialize geocoder and street view service
-    const service = new google.maps.StreetViewService();
-    const geocoder = new google.maps.Geocoder();
-
-    // Initialize PanoramaService
-    const panoramaService = new PanoramaService(geocoder, service);
+    const [currentLocationDesc, setCurrentLocationDesc] = useState("");
 
     const submitedRef = useRef(submited);
 
-    //gamemode
-    const [gameMode, setGameMode] = useState<GamemodeEnum>(GamemodeEnum.SVK_EASY);
+    // Game mode and Redux state
+    const [gameMode, setGameMode] = useState(GamemodeEnum.SVK_EASY);
+    const isGameActive = useAppSelector((state) => state.gameState.gameActive);
 
-    //redux
-    const isGameActive = useAppSelector((state) => state.gameState.gameActive)
-    const dispatch = useAppDispatch()
+    const loader = new Loader({
+        apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY as string,
+        version: "weekly"
+    });
 
     function handleCloseDialog() {
         setIsDialogOpen(false);
@@ -67,19 +66,29 @@ function Game() {
         setIsGameResultDialogOpen(false)
     }
 
+    function sign() {
+        signUp()
+    }
+
     useEffect(() => {
         submitedRef.current = submited;
     }, [submited]);
 
     useEffect(() => {
-        dispatch(setGameActive(true))
-        initMap();
-        initializeStreetView();
-    }, [gameMode]);
+        // Set game active state
+        dispatch(setGameActive(true));
 
-    function initGame() {
-        setGameMode(GamemodeEnum.SVK_EASY)
-    }
+        // Load the Google Maps API and initialize components
+        loader.load().then(() => {
+            service = new google.maps.StreetViewService();
+            geocoder = new google.maps.Geocoder();
+            panoramaService = new PanoramaService(geocoder, service);
+            initMap();
+            initializeStreetView();
+        }).catch((error) => {
+            console.error("Error loading Google Maps API:", error);
+        });
+    }, [gameMode]);
 
     function getStartingZoom() {
         if (gameMode === GamemodeEnum.SVK_EASY || gameMode === GamemodeEnum.SVK_HARD) {
@@ -110,7 +119,6 @@ function Game() {
                 },
             ]
         };
-
         map = new google.maps.Map(document?.getElementById('map') as HTMLElement, mapOptions);
 
         const pinSvg = `
@@ -133,7 +141,7 @@ function Game() {
             map: map,
         });
 
-        map.addListener("click", (event) => {
+        map?.addListener("click", (event: any) => {
             marker2.setMap(map)
             setMarkers([...markers, marker2, markerSv])
             setMarkerPos(event.latLng)
@@ -174,9 +182,7 @@ function Game() {
 
             if (gameMode === GamemodeEnum.SVK_EASY) {
                 pano = await panoramaService.getSvkVillagePanorama((data: any, village: string) => {
-                    console.log("Data: ", data)
                     setSVCoords(data?.location?.latLng);
-                    console.log("Village: ", village)
                     setCurrentLocationDesc(village);
                 });
             } else {
@@ -330,6 +336,11 @@ function Game() {
                     <div className="w-full h-full rounded-full bg-blue-300 flex items-center justify-center ">
                         <MapIcon className="w-24 h-24 text-white m-6 "/>
                     </div>
+                </div>
+                <div className="absolute !z-[1000] right-5 bottom-5 ">
+                    <Button onClick={sign} className="text-bold text-md text-white w-full" fullWidth color="blue">
+                        SIGN
+                    </Button>
                 </div>
                 <div className={`absolute bottom-5  md:left-5 w-full md:w-[20%] p-5 md:p-0 transition-all fade-in ease-in-out duration-500
                             ${isMapOpened ? "block md:block" : " hidden md:block"}`}>

@@ -8,7 +8,6 @@ import {Provider} from 'react-redux';
 import Game from './components/Game';
 import Login from './components/Login';
 
-
 const root = ReactDOM.createRoot(
     document.getElementById('root') as HTMLElement
 );
