@@ -2,7 +2,6 @@ import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 
 const auth = getAuth();
 
-
 export default function signUp() {
     const email = "olivermrovcak22@gmail.com"
     const password = "password"

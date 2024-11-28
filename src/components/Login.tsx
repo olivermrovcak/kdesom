@@ -1,55 +1,134 @@
 import {Button, Card, CardBody, CardHeader, Input, Typography} from '@material-tailwind/react'
 import React from 'react'
 import DifficultyTabs from './DifficultyTabs'
-import { useNavigate } from 'react-router-dom'
+import {useNavigate} from 'react-router-dom'
+import {Checkbox} from '@mui/material'
+import logo from '../images/guess-logo.png';
+import { LockClosedIcon } from '@heroicons/react/24/outline'
 
 function Login() {
+
+    const element = document.querySelector('.topo-bg');
+    let targetX = 0, targetY = 0;
+    let currentX = 0, currentY = 0;
+
+    document.addEventListener("mousemove", (event) => {
+        const { clientX, clientY } = event;
+        const { innerWidth, innerHeight } = window;
+
+        targetX = (clientX / innerWidth) * 50; // Horizontal movement range
+        targetY = (clientY / innerHeight) * 50; // Vertical movement range
+    });
+
+    function smoothMove() {
+        currentX += (targetX - currentX) * 0.01; // Smooth horizontal movement
+        currentY += (targetY - currentY) * 0.001; // Smooth vertical movement
+
+        element.style.backgroundPosition = `${currentX}% ${currentY}%`;
+        requestAnimationFrame(smoothMove);
+    }
+
+    //smoothMove();
+
+
     const navigate = useNavigate()
     return (
-        <div className="login-bg w-screen h-screen bg-gray-50 dark:bg-gray-800 flex justify-center items-center">
+        <section className="topo-bg flex justify-center items-center w-screen h-screen relative">
+            <div className=" rounded-md bg-white border border-gray-200 shadow-2xl grid grid-rows-1 lg:grid-cols-2 max-w-[95%] md:max-w-[60%] lg:max-w-[86%] xl:max-w-[860px]  ">
+                <div className="hidden lg:block flex flex-col justify-start items-center p-3 ">
+                    <div className="w-full h-full border rounded-md flex flex-col items-start p-2 ">
+                        <p className="font-black text-blue-500 text-[100px] leading-[8rem]">KDE</p>
+                        <p className="font-black text-blue-500 text-[100px] leading-[6rem] pl-7">SOM?</p>
 
-            <div className="bg-white rounded-md w-[70%] h-[80%] flex flex-row overflow-hidden">
-                {/*left side*/}
-                <div className="bg-red-300 w-full p-5 flex justify-center items-center">
-                    <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-                        <form action="#" method="POST" className="space-y-6">
-                            <h1 className="text-center text-2xl font-bold">Rýchla hra</h1>
-                            <div>
-                                <label htmlFor="email" className="block text-sm font-bold leading-6 text-gray-900">
-                                    Prezývka
-                                </label>
-                                <div className="mt-2">
-                                    <input
-                                        id="nickname"
-                                        name="nickname"
-                                        className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                                    />
-                                </div>
-                            </div>
+                        <p className="font-bold text-sm text-center pt-10 mb-auto">
+                            KdeSom je interaktívna hra, ktorá testuje vaše geografické znalosti.
+                            Cieľom je určiť polohu na mape na základe Google Street View obrázkov.
+                        </p>
 
-                            <DifficultyTabs/>
+                        <p className=" font-normal text-[10px] text-center text-gray-500 ">
+                            Vážený hráč,
 
-                            <div>
-                                <button
-                                    onClick={() => navigate('/game')}
-                                    className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                                >
-                                    Spustiť
-                                </button>
-                            </div>
-                        </form>
+                            Naša hra využíva službu Google Street View, ktorá je spoplatnená.
+                            Náklady za používanie však hradíme my.
+                            Pre zaistenie spravodlivého a bezpečného hrania vás
+                            žiadame o prihlásenie pred začiatkom hry. Ďakujeme a užite si hru!
+                        </p>
+                    </div>
+                </div>
+                <Card className="p-5 flex-col items-center" color="transparent" shadow={false}>
+                    <Typography variant="h4" color="blue-gray" className="text-center">
+                        Prihlásiť sa
+                    </Typography>
+                    <div className="w-full flex justify-center mt-3">
+                      <LockClosedIcon className="w-8 text-blue-700"/>
                     </div>
 
-                </div>
+                    <form className="mt-8 mb-2 w-80 max-w-screen-lg sm:w-96">
+                        <div className="mb-1 flex flex-col gap-6">
+                            <Typography variant="h6" color="blue-gray" className="-mb-3">
+                                Email
+                            </Typography>
+                            <Input
+                                size="lg"
+                                placeholder="name@mail.com"
+                                className=" !border-t-blue-gray-200 focus:!border-t-gray-900"
+                                labelProps={{
+                                    className: "before:content-none after:content-none",
+                                }}
+                            />
+                            <Typography variant="h6" color="blue-gray" className="-mb-3">
+                                Heslo
+                            </Typography>
+                            <Input
+                                type="password"
+                                size="lg"
+                                placeholder="********"
+                                className=" !border-t-blue-gray-200 focus:!border-t-gray-900"
+                                labelProps={{
+                                    className: "before:content-none after:content-none",
+                                }}
+                            />
+                        </div>
 
-                {/*right side*/}
-                <div className="bg-blue-300 w-full">
+                        <Button className="mt-6" fullWidth color="blue">
+                            Prihlásiť sa
+                        </Button>
+                        <div className="py-4 flex flex-row justify-center items-center">
+                            <div className="h-[1px] w-full border border-gray-300 "></div>
+                            <p className="bg-white px-3">alebo</p>
+                            <div className="h-[1px] w-full border border-gray-300"></div>
+                        </div>
 
-                </div>
+                        <Button
+                            variant="outlined"
+                            color="blue-gray"
+                            className="flex items-center justify-center gap-3 w-full"
+                        >
+                            <img src="https://docs.material-tailwind.com/icons/google.svg" alt="metamask"
+                                 className="h-4 w-4"/>
+                            Google login
+                        </Button>
+                        <Typography color="gray" className="mt-4 text-center font-normal">
+                            Ešte nemáš účet? {" "}
+                            <a href="#" className="font-medium text-gray-900">
+                                Zaregistrovať sa
+                            </a>
+                        </Typography>
+                    </form>
+                    <div className="lg:hidden  w-full ">
+                        <div className="h-[1px] w-full border border-gray-300 mb-2 "></div>
+                        <p className="font-normal text-[10px] text-center text-gray-500 ">
+                            Vážený hráč,
 
+                            Naša hra využíva službu Google Street View, ktorá je spoplatnená.
+                            Náklady za používanie však hradíme my.
+                            Pre zaistenie spravodlivého a bezpečného hrania vás
+                            žiadame o prihlásenie pred začiatkom hry. Ďakujeme a užite si hru!
+                        </p>
+                    </div>
+                </Card>
             </div>
-
-        </div>
+        </section>
     )
 }
 

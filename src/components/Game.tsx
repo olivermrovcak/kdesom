@@ -66,10 +66,6 @@ function Game() {
         setIsGameResultDialogOpen(false)
     }
 
-    function sign() {
-        signUp()
-    }
-
     useEffect(() => {
         submitedRef.current = submited;
     }, [submited]);
