@@ -60,8 +60,7 @@ html, body {
 
 .topo-bg {
     background: url("./images/topo.png");
-    background-size: cover;
+    background-size: 120%;
     background-repeat: repeat;
-    background-attachment: fixed;
 }
 

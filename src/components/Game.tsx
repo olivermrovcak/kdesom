@@ -58,6 +58,8 @@ function Game() {
         version: "weekly"
     });
 
+    console.log(process.env.REACT_APP_GOOGLE_MAPS_API_KEY)
+
     function handleCloseDialog() {
         setIsDialogOpen(false);
     }
@@ -332,11 +334,6 @@ function Game() {
                     <div className="w-full h-full rounded-full bg-blue-300 flex items-center justify-center ">
                         <MapIcon className="w-24 h-24 text-white m-6 "/>
                     </div>
-                </div>
-                <div className="absolute !z-[1000] right-5 bottom-5 ">
-                    <Button onClick={sign} className="text-bold text-md text-white w-full" fullWidth color="blue">
-                        SIGN
-                    </Button>
                 </div>
                 <div className={`absolute bottom-5  md:left-5 w-full md:w-[20%] p-5 md:p-0 transition-all fade-in ease-in-out duration-500
                             ${isMapOpened ? "block md:block" : " hidden md:block"}`}>

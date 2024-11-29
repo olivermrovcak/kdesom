@@ -1,39 +1,72 @@
 import {Button, Card, CardBody, CardHeader, Input, Typography} from '@material-tailwind/react'
-import React from 'react'
+import React, { useEffect } from 'react'
 import DifficultyTabs from './DifficultyTabs'
 import {useNavigate} from 'react-router-dom'
 import {Checkbox} from '@mui/material'
 import logo from '../images/guess-logo.png';
 import { LockClosedIcon } from '@heroicons/react/24/outline'
+import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth'
+import {app} from '../firebase/firebaseConfig'
 
 function Login() {
 
-    const element = document.querySelector('.topo-bg');
-    let targetX = 0, targetY = 0;
-    let currentX = 0, currentY = 0;
-
-    document.addEventListener("mousemove", (event) => {
-        const { clientX, clientY } = event;
-        const { innerWidth, innerHeight } = window;
-
-        targetX = (clientX / innerWidth) * 50; // Horizontal movement range
-        targetY = (clientY / innerHeight) * 50; // Vertical movement range
-    });
-
-    function smoothMove() {
-        currentX += (targetX - currentX) * 0.01; // Smooth horizontal movement
-        currentY += (targetY - currentY) * 0.001; // Smooth vertical movement
-
-        element.style.backgroundPosition = `${currentX}% ${currentY}%`;
-        requestAnimationFrame(smoothMove);
-    }
-
-    //smoothMove();
-
+    const apps  = app;
 
     const navigate = useNavigate()
+
+    const googleSignIn = () => {
+        const provider = new GoogleAuthProvider();
+        const auth = getAuth(apps);
+
+        signInWithPopup(auth, provider)
+            .then((result) => {
+                console.log(result);
+                // This gives you a Google Access Token. You can use it to access the Google API.
+                const credential = GoogleAuthProvider.credentialFromResult(result);
+                const token = credential.accessToken;
+                // The signed-in user info.
+                const user = result.user;
+                navigate('/game')
+                // ...
+            }).catch((error) => {
+            // Handle Errors here.
+            const errorCode = error.code;
+            const errorMessage = error.message;
+            // The email of the user's account used.
+            const email = error.email;
+            // The AuthCredential type that was used.
+            const credential = GoogleAuthProvider.credentialFromError(error);
+            console.log(errorCode, errorMessage, email, credential)
+            // ...
+        });
+    }
+
+    useEffect(() => {
+        const element = document.querySelector('.topo-bg');
+        let targetX = 0, targetY = 0;
+        let currentX = 0, currentY = 0;
+
+        document.addEventListener("mousemove", (event) => {
+            const { clientX, clientY } = event;
+            const { innerWidth, innerHeight } = window;
+
+            targetX = (clientX / innerWidth) * 50; // Horizontal movement range
+            targetY = (clientY / innerHeight) * 50; // Vertical movement range
+        });
+
+        function smoothMove() {
+            currentX += (targetX - currentX) * 0.01; // Smooth horizontal movement
+            currentY += (targetY - currentY) * 0.001; // Smooth vertical movement
+
+            element.style.backgroundPosition = `${currentX}% ${currentY}%`;
+            requestAnimationFrame(smoothMove);
+        }
+
+        smoothMove();
+    }, []);
+
     return (
-        <section className="topo-bg flex justify-center items-center w-screen h-screen relative">
+        <section className=" App topo-bg flex justify-center items-center w-screen h-screen relative">
             <div className=" rounded-md bg-white border border-gray-200 shadow-2xl grid grid-rows-1 lg:grid-cols-2 max-w-[95%] md:max-w-[60%] lg:max-w-[86%] xl:max-w-[860px]  ">
                 <div className="hidden lg:block flex flex-col justify-start items-center p-3 ">
                     <div className="w-full h-full border rounded-md flex flex-col items-start p-2 ">
@@ -103,6 +136,7 @@ function Login() {
                             variant="outlined"
                             color="blue-gray"
                             className="flex items-center justify-center gap-3 w-full"
+                            onClick={googleSignIn}
                         >
                             <img src="https://docs.material-tailwind.com/icons/google.svg" alt="metamask"
                                  className="h-4 w-4"/>
