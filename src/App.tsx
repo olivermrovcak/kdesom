@@ -33,7 +33,7 @@ function App() {
                 <Routes>
                     {isUserSignedIn ? (
                         <>
-                            <Route path="/" element={<Game/>}/>
+                            <Route path="/game" element={<Game/>}/>
                         </>
                     ) : (
                         <>
