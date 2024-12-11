@@ -126,7 +126,7 @@ html, body {
     opacity: 0.5;
 }
 
-@keyframes spin{
+@keyframes spinBorder{
     from {
         --angle: 0deg;
     }
@@ -138,6 +138,6 @@ html, body {
 
 .card.spin-active::after,
 .card.spin-active::before {
-    animation: 3s spin linear infinite;
+    animation: 3s spinBorder linear infinite;
 }
 

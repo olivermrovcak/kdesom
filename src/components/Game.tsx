@@ -118,7 +118,6 @@ function Game() {
     }
 
     function initMap(): void {
-        getRandomLatLng();
         const mapOptions: google.maps.MapOptions = {
             center: {lat: 48.77559816437337, lng: 19.61552985351171},
             zoom: getStartingZoom(),
@@ -330,7 +329,7 @@ function Game() {
                 {isLoading && (
                     <div className="w-screen h-screen bg-blue-700 flex justify-center items-center bg-opacity-30 transition-all">
                         <div className="w-32">
-                            <img className="animate-spin " src={compasss}/>
+                            <img className="animate-spin" src={compasss}/>
                         </div>
                     </div>
                 )}
@@ -361,7 +360,7 @@ function Game() {
                 <div className="w-screen h-screen z-0 " id="street-view"></div>
 
                 {/*LEADERBOARD*/}
-                {(!isMapOpened && gameMode === GamemodeEnum.WORLD) && <AiButton getClue={getClue}/>}
+                {(!isMapOpened && gameMode === GamemodeEnum.WORLD) && <AiButton getClue={getClue} tries={tries}/>}
 
                 <div className={`w-full h-[50%] md:w-[20%] md:h-[20%] bg-blue-300 bottom-0 rounded-t-[30px] md:rounded-md absolute 
                                  transition-all ease-in-out duration-300 

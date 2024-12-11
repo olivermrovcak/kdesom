@@ -1,11 +1,12 @@
 import { SparklesIcon } from '@heroicons/react/24/solid'
-import React, { useState } from 'react'
+import React, {useEffect, useState } from 'react'
 
 interface Props {
     getClue: () => string;
+    tries: number;
 }
 
-function AiButton({ getClue }: Props) {
+function AiButton({ getClue,tries }: Props) {
     const [isSpinning, setIsSpinning] = useState(false);
     const [clue, setClue] = useState('');
 
@@ -16,11 +17,14 @@ function AiButton({ getClue }: Props) {
         setClue('');
         for (let i = 0; i < fetchedClue.length; i++) {
             setClue((prev) => prev + fetchedClue[i]);
-            await new Promise(resolve => setTimeout(resolve, 100)); 
+            await new Promise(resolve => setTimeout(resolve, 100));
         }
         setIsSpinning(false);
     }
 
+    useEffect(() => {
+        setClue('')
+    }, [tries]);
 
     return (
         <div className="!z-[999] absolute right-10 bottom-14 cursor-pointer sm:bottom-5 sm:right-5 rounded-lg">
