@@ -10,13 +10,18 @@ import { Loader } from "@googlemaps/js-api-loader"
 import {setGameActive} from '../redux/slices/GameState'
 import {Button} from '@material-tailwind/react';
 import Dialog from './Dialog';
-import {MapIcon, XCircleIcon} from '@heroicons/react/24/solid'
+import {MapIcon, XCircleIcon, TrophyIcon, SparklesIcon} from '@heroicons/react/24/solid'
 import {GamemodeEnum} from '../utils/GamemodeEnum';
 
 import {PanoramaService} from '../coordinates/Geolocation';
 import GameResultDialog from './GameResultDialog';
 import MenuList from './MenuList';
-import signUp from '../api/auth';
+import { getAuth } from 'firebase/auth';
+import { app } from '../firebase/firebaseConfig';
+import { saveRecordToFirestore } from '../api/apiCalls';
+import LeaderBoardDialog from './LeaderBoardDialog';
+import { getGeminiContent, getRandomLatLng } from '../gemini/GeminiApi';
+import AiButton from './AiButton';
 let panorama: google.maps.StreetViewPanorama;
 let map: google.maps.Map;
 let service: google.maps.StreetViewService;
@@ -27,6 +32,7 @@ let panoramaService: PanoramaService ;
 function Game() {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
+    const auth = getAuth(app);
 
     // State variables
     const [tries, setTries] = useState(1);
@@ -44,13 +50,14 @@ function Game() {
     const [isMapOpened, setIsMapOpened] = useState(false);
     const [isGameResultDialogOpen, setIsGameResultDialogOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isLeaderBoardDialogOpened, setIsLeaderBoardDialogOpened] = useState(false);
 
     const [currentLocationDesc, setCurrentLocationDesc] = useState("");
 
     const submitedRef = useRef(submited);
 
     // Game mode and Redux state
-    const [gameMode, setGameMode] = useState(GamemodeEnum.SVK_EASY);
+    const [gameMode, setGameMode] = useState(GamemodeEnum.WORLD);
     const isGameActive = useAppSelector((state) => state.gameState.gameActive);
 
     const loader = new Loader({
@@ -58,7 +65,17 @@ function Game() {
         version: "weekly"
     });
 
-    console.log(process.env.REACT_APP_GOOGLE_MAPS_API_KEY)
+    async function getClue(): Promise<string> {
+        const prompt = "Give me one short clue about " + currentLocationDesc + " in 2 words, return text just in slovak language, dont mantion the name of the place.";
+        try {
+            const response = await getGeminiContent(prompt);
+            console.log("Response: ", response);
+            return response;
+        } catch (error) {
+            console.error("Error getting Gemini content:", error);
+            return "Error fetching clue";
+        }
+    }
 
     function handleCloseDialog() {
         setIsDialogOpen(false);
@@ -66,6 +83,10 @@ function Game() {
 
     function handleCloseGameResultDialog() {
         setIsGameResultDialogOpen(false)
+    }
+
+    function handleCloseLeaderBoardDialog() {
+        setIsLeaderBoardDialogOpened(false)
     }
 
     useEffect(() => {
@@ -97,6 +118,7 @@ function Game() {
     }
 
     function initMap(): void {
+        getRandomLatLng();
         const mapOptions: google.maps.MapOptions = {
             center: {lat: 48.77559816437337, lng: 19.61552985351171},
             zoom: getStartingZoom(),
@@ -234,14 +256,35 @@ function Game() {
 
         const distance = calculateDistance(stViewLat, stViewLng, markerLat, markerLng);
         const actualPoints = calculatePoints(distance);
-        setPoints(points + actualPoints)
-        console.log("Distance points: ", calculatePoints(distance))
+        setPoints(points + actualPoints);
+        console.log("Distance points: ", calculatePoints(distance));
         setSubmited(true);
 
-        setRoundPoints(actualPoints)
-        setIsDialogOpen(true)
-        setIsMapOpened(false)
+        setRoundPoints(actualPoints);
+        setIsDialogOpen(true);
+        setIsMapOpened(false);
+
+        // Save the record to Firestore
+        const auth = getAuth();
+        const user = auth.currentUser;
+
+        if (user) {
+            const record = {
+                streetViewLat: stViewLat,
+                streetViewLng: stViewLng,
+                markerLat,
+                markerLng,
+                distance,
+                points: actualPoints,
+                timestamp: new Date().toISOString(),
+            };
+
+            saveRecordToFirestore(user.email, record);
+        } else {
+            console.error("User is not logged in.");
+        }
     }
+
 
     function handleReset() {
        /* if (tries === 3) {
@@ -317,6 +360,9 @@ function Game() {
 
                 <div className="w-screen h-screen z-0 " id="street-view"></div>
 
+                {/*LEADERBOARD*/}
+                {(!isMapOpened && gameMode === GamemodeEnum.WORLD) && <AiButton getClue={getClue}/>}
+
                 <div className={`w-full h-[50%] md:w-[20%] md:h-[20%] bg-blue-300 bottom-0 rounded-t-[30px] md:rounded-md absolute 
                                  transition-all ease-in-out duration-300 
                                  md:hover:w-[35%] md:hover:h-[30%]
@@ -350,7 +396,7 @@ function Game() {
             </section>
             <Dialog showDialog={isDialogOpen} closeDialog={handleCloseDialog} posPlayer={markerPos} posResult={sVCoords}
                     handleReset={handleReset} score={roundPoints} tries={tries} gameMode={gameMode}/>
-            <GameResultDialog showDialog={isGameResultDialogOpen} closeDialog={handleCloseGameResultDialog}/>
+            <LeaderBoardDialog showDialog={isLeaderBoardDialogOpened} closeDialog={handleCloseLeaderBoardDialog}/>
         </div>
     );
 }

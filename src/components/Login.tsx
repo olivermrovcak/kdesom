@@ -1,5 +1,5 @@
 import {Button, Card, CardBody, CardHeader, Input, Typography} from '@material-tailwind/react'
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import DifficultyTabs from './DifficultyTabs'
 import {useNavigate} from 'react-router-dom'
 import {Checkbox} from '@mui/material'
@@ -9,9 +9,7 @@ import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth'
 import {app} from '../firebase/firebaseConfig'
 
 function Login() {
-
     const apps  = app;
-
     const navigate = useNavigate()
 
     const googleSignIn = () => {
