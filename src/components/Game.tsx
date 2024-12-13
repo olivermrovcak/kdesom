@@ -14,7 +14,6 @@ import {MapIcon, XCircleIcon, TrophyIcon, SparklesIcon} from '@heroicons/react/2
 import {GamemodeEnum} from '../utils/GamemodeEnum';
 
 import {PanoramaService} from '../coordinates/Geolocation';
-import GameResultDialog from './GameResultDialog';
 import MenuList from './MenuList';
 import { getAuth } from 'firebase/auth';
 import { app } from '../firebase/firebaseConfig';

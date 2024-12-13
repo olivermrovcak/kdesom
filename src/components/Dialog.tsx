@@ -178,26 +178,30 @@ export default function DialogDefault({
     }, [showDialog]);
 
     return (
-        <Dialog open={isOpen} onClose={handleClose} size={"xxl"} disableEscapeKeyDown
-                className="bg-white bg-opacity-20 backdrop-blur-xl !w-screen !h-screen m-0 p-0 !absolute !left-0 !overflow-hidden">
-            <DialogBody className="relative w-full h-full !overflow-hidden flex justify-center items-end">
-                <div className="logo absolute left-[50%] top-5 -translate-x-[50%] sm:-translate-x-[0%] sm:left-5  lg:top-5 lg:left-5 w-[30%] sm:w-[15%] !z-[1000]">
-                    <img src={guessLogo} alt="logo"/>
-                </div>
-                <div ref={mapRef} className="!absolute top-0 left-0 w-full h-full rounded-lg"></div>
-                <div className=" !z-[1000]  w-full md:w-[50%] p-5 h-[30%]">
-                    <div className="w-full h-full rounded-lg bg-blue-700 bg-opacity-40 backdrop-blur-lg flex flex-col justify-end items-center p-3">
-                        <div className="w-[50%] p-3 text-center text-black font-black text-2xl mb-12">
-                            {score} / 5000
+        <>
+            {isOpen && (
+                <div
+                    className="App w-screen h-screen absolute top-0 left-0 !overflow-hidden !z-[9999]">
+                    <div className="relative w-full h-full !overflow-hidden">
+                        <div className="logo absolute left-[50%] top-5 -translate-x-[50%] sm:-translate-x-[0%] sm:left-5  lg:top-5 lg:left-5 w-[30%] sm:w-[15%] !z-[1000]">
+                            <img src={guessLogo} alt="logo"/>
                         </div>
-                        <div className="p-1 bg-blue-700 bg-opacity-30 w-fit rounded-lg ">
-                            <Button onClick={handleReset} className="text-2xl bg-blue-600 hover:shadow-none shadow-none font-black rounded-md ">
-                                Další pokus
-                            </Button>
+                        <div ref={mapRef} className="!absolute top-0 left-0 w-full h-full rounded-lg"></div>
+                        <div className=" w-full md:w-[50%] p-5 h-[30%] bottom-0 absolute">
+                            <div className="w-full h-full rounded-lg bg-blue-700 bg-opacity-40 backdrop-blur-lg flex flex-col justify-end items-center p-3">
+                                <div className="w-[50%] p-3 h-[50%] text-center text-black font-black text-2xl ">
+                                    {score} / 5000
+                                </div>
+                                <div className="p-1 bg-blue-700 bg-opacity-30 w-fit rounded-lg ">
+                                    <Button onClick={handleReset} className="text-2xl bg-blue-600 hover:shadow-none shadow-none font-black rounded-md ">
+                                        Další pokus
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </DialogBody>
-        </Dialog>
+            )}
+        </>
     );
 }
