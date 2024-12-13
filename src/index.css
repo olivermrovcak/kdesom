@@ -57,11 +57,26 @@ html, body {
     background-repeat: no-repeat;
     background-attachment: fixed;
 }
-
 .topo-bg {
     background: url("./images/topo.png");
     background-size: 120%;
     background-repeat: repeat;
+}
+
+@keyframes topoAnim {
+    from {
+        background-position: 0 0;
+    }
+    to {
+        background-position: 100% 100%;
+    }
+}
+
+@media screen and (max-width: 1140px) {
+    .topo-bg {
+        animation: topoAnim 50s linear infinite;
+        background-size: 400%;
+    }
 }
 
 .card-border {

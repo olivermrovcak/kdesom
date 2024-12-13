@@ -94,10 +94,8 @@ function Game() {
     }, [submited]);
 
     useEffect(() => {
-        // Set game active state
         dispatch(setGameActive(true));
 
-        // Load the Google Maps API and initialize components
         loader.load().then(() => {
             service = new google.maps.StreetViewService();
             geocoder = new google.maps.Geocoder();
@@ -176,15 +174,14 @@ function Game() {
                 pov: {heading: 165, pitch: 0},
                 zoom: 1,
                 addressControl: false,
-                linksControl: false, //movement
+                linksControl: false,
                 panControl: false,
                 enableCloseButton: false,
                 disableDefaultUI: true,
                 showRoadLabels: false,
-                clickToGo: true            // Disables clicking to navigate to other locations
+                clickToGo: true
             }
         );
-
         getView()
     }
 
@@ -256,14 +253,12 @@ function Game() {
         const distance = calculateDistance(stViewLat, stViewLng, markerLat, markerLng);
         const actualPoints = calculatePoints(distance);
         setPoints(points + actualPoints);
-        console.log("Distance points: ", calculatePoints(distance));
         setSubmited(true);
 
         setRoundPoints(actualPoints);
         setIsDialogOpen(true);
         setIsMapOpened(false);
 
-        // Save the record to Firestore
         const auth = getAuth();
         const user = auth.currentUser;
 
@@ -315,10 +310,6 @@ function Game() {
         }
     }
 
-    function handleGoBack() {
-        navigate('/')
-    }
-
     function handleChangeGameMode(dGameMode: GamemodeEnum) {
         setGameMode(dGameMode);
     }
@@ -339,7 +330,7 @@ function Game() {
                     <img src={guessLogo} alt="logo"/>
                 </div>
                 <div
-                    className={`!z-[1000] absolute right-5 top-16 sm:top-5 bg-blue-700 bg-opacity-30 
+                    className={`!z-[9999] absolute right-5 top-[55px] sm:top-5 bg-blue-700 bg-opacity-30 
                 rounded-lg p-1  transition-all duration-300 ease-in-out overflow-hidden flex flex-col justify-center items-center
                 ${isMenuOpen ? "w-64 h-52" : "w-14 h-14"}`}>
                     <div className="bg-blue-500 rounded-md w-full h-full p-1">

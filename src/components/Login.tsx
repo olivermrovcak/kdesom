@@ -64,7 +64,7 @@ function Login() {
     }, []);
 
     return (
-        <section className=" App topo-bg flex justify-center items-center w-screen h-screen relative">
+        <section className="App topo-bg flex justify-center items-center w-screen h-screen relative">
             <div className=" rounded-md bg-white border border-gray-200 shadow-2xl grid grid-rows-1 lg:grid-cols-2 max-w-[95%] md:max-w-[60%] lg:max-w-[86%] xl:max-w-[860px]  ">
                 <div className="hidden lg:block flex flex-col justify-start items-center p-3 ">
                     <div className="w-full h-full border rounded-md flex flex-col items-start p-2 ">
